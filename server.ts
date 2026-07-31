@@ -157,10 +157,10 @@ async function updateSiteSection(section: string, value: any) {
   }
 }
 
-async function startServer() {
-  await loadServerSiteData();
-  const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+const app = express();
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+loadServerSiteData().catch(e => console.error("Initial load err:", e));
 
   // JSON payload up to 50mb for media data
   app.use(express.json({ limit: '50mb' }));
@@ -203,8 +203,8 @@ async function startServer() {
   app.get("/api/", (req, res) => res.json({ message: "Adan Decor API", status: "running" }));
 
   // ── Site Data (full read/write) ──
-  app.get("/api/site-data", (req, res) => {
-    loadServerSiteData();
+  app.get("/api/site-data", async (req, res) => {
+    await loadServerSiteData();
     if (serverSiteData && Object.keys(serverSiteData).length > 0) {
       return res.json(serverSiteData);
     }
@@ -550,13 +550,14 @@ async function startServer() {
   });
 
   // ── Vite middleware for development ──
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
+    }).then(vite => {
+      app.use(vite.middlewares);
+    }).catch(err => console.error("Vite init error:", err));
+  } else if (!process.env.VERCEL) {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, { maxAge: '1y', setHeaders: (res, filePath) => { if (filePath.includes('/assets/')) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } } }));
     app.get('*', (req, res) => {
@@ -564,9 +565,10 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }
 
-startServer();
+export default app;
