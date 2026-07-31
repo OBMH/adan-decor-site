@@ -1,0 +1,659 @@
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { preloadCriticalImages } from "../components/SafeImage";
+import {
+  BRAND,
+  HERO_IMAGE,
+  ABOUT_IMAGE,
+  SERVICES,
+  PORTFOLIO,
+  TESTIMONIALS,
+} from "../data/content";
+import interiorCardBg from "../assets/images/interior_card_bg_1784515033104.jpg";
+import aluminumCardBg from "../assets/images/aluminum_card_bg_1784516085266.jpg";
+import carpentryCardBg from "../assets/images/carpentry_card_bg_1784516477737.jpg";
+import commercialCardBg from "../assets/images/interior_card_bg_1784515033104.jpg";
+import insulationCardBg from "../assets/images/insulation_card_bg_1784517415029.jpg";
+
+// Seed all 18 initial service items flattened from SERVICES in content.js
+export const INITIAL_SERVICES = [
+  // interior
+  { id: "s1", categoryId: "interior", categoryTitle: "الديكور الداخلي والتشطيبات", icon: "LayoutPanelTop", title: "تخطيط المساحات", desc: "نستغل كل متر في منزلك! نقدم حلولاً ذكية لتوزيع الأثاث والحركة لضمان الانسيابية والراحة، مع مراعاة أبعاد الفراغ لتحقيق توازن مثالي بين الجمال والوظيفة.", order: 1 },
+  { id: "s2", categoryId: "interior", categoryTitle: "الديكور الداخلي والتشطيبات", icon: "PaintBucket", title: "أعمال الجبس", desc: "ديكورات جبسية فنية للأسقف والجدران بتصاميم كلاسيكية وعصرية فاخرة.", order: 2 },
+  { id: "s3", categoryId: "interior", categoryTitle: "الديكور الداخلي والتشطيبات", icon: "Sofa", title: "تصميم غرف المعيشة", desc: "غرف معيشة عصرية وفاخرة تجمع بين الراحة والذوق الرفيع.", order: 3 },
+  { id: "s4", categoryId: "interior", categoryTitle: "الديكور الداخلي والتشطيبات", icon: "BedDouble", title: "تصميم الغرف", desc: "غرف مصممة بعناية تعكس شخصية ساكنيها وتمنحهم الراحة المطلقة.", order: 4 },
+  { id: "s5", categoryId: "interior", categoryTitle: "الديكور الداخلي والتشطيبات", icon: "Boxes", title: "تجهيز العقارات", desc: "تجهيز كامل للعقارات بأثاث ومفروشات ومستلزمات بأعلى المعايير.", order: 5 },
+
+  // aluminum
+  { id: "s6", categoryId: "aluminum", categoryTitle: "أعمال الألمنيوم والواجهات", icon: "RectangleHorizontal", title: "تصميم النوافذ", desc: "نوافذ فاخرة تجمع بين الإطلالة المثالية والعزل الحراري والأناقة المعمارية.", order: 6 },
+  { id: "s7", categoryId: "aluminum", categoryTitle: "أعمال الألمنيوم والواجهات", icon: "Layers3", title: "ألوكوبوند", desc: "تنفيذ ألوكوبوند احترافي للواجهات الخارجية والداخلية بأعلى معايير الجودة.", order: 7 },
+  { id: "s8", categoryId: "aluminum", categoryTitle: "أعمال الألمنيوم والواجهات", icon: "Building2", title: "ديكور الأسمنت الخارجي", desc: "تصاميم أسمنتية خارجية فنية تمنح الواجهات هوية معمارية فريدة.", order: 8 },
+  { id: "s9", categoryId: "aluminum", categoryTitle: "أعمال الألمنيوم والواجهات", icon: "GlassWater", title: "الزجاج المعشّق", desc: "زجاج معشّق فني بنقوش وألوان كلاسيكية وعصرية لإضافة لمسة من الفن.", order: 9 },
+  { id: "s10", categoryId: "aluminum", categoryTitle: "أعمال الألمنيوم والواجهات", icon: "Mountain", title: "تصميم الحجر والطوب والجبس", desc: "تصميم وتنفيذ واجهات وجدران بالحجر الطبيعي والطوب والجبس بلمسات فنية راقية.", order: 10 },
+
+  // carpentry
+  { id: "s11", categoryId: "carpentry", categoryTitle: "النجارة والديكور الخشبي المخصص", icon: "Hammer", title: "أعمال الخشب", desc: "أعمال نجارة فاخرة بأخشاب نبيلة ولمسات يدوية دقيقة تخلّد التميّز.", order: 11 },
+  { id: "s12", categoryId: "carpentry", categoryTitle: "النجارة والديكور الخشبي المخصص", icon: "Trees", title: "التصميم الداخلي الخشبي", desc: "ديكورات خشبية داخلية فخمة تضفي دفئاً وعراقة على كل مساحة.", order: 12 },
+
+  // commercial
+  { id: "s13", categoryId: "commercial", categoryTitle: "المشاريع التجارية والطبية", icon: "Briefcase", title: "تصميم المساحات المكتبية", desc: "بيئات عمل راقية تعزّز الإنتاجية وتعكس هوية علامتك التجارية.", order: 13 },
+  { id: "s14", categoryId: "commercial", categoryTitle: "المشاريع التجارية والطبية", icon: "Utensils", title: "تصميم المطاعم", desc: "تصميم مطاعم فاخرة تخلق تجربة طعام لا تُنسى لروّاد المكان.", order: 14 },
+
+  // construction
+  { id: "s15", categoryId: "construction", categoryTitle: "العوازل والترميم الإنشائي", icon: "Construction", title: "البناء بالحجر", desc: "بناء حجري احترافي يعكس الأصالة المعمارية بأيدي خبرة تمتد لسنوات.", order: 15 },
+  { id: "s16", categoryId: "construction", categoryTitle: "العوازل والترميم الإنشائي", icon: "Sparkles", title: "صقل وجلي الحجر", desc: "خدمات صقل وجلي الحجر الطبيعي والرخام لإحياء بريقها الأصلي وحمايتها.", order: 16 },
+  { id: "s17", categoryId: "construction", categoryTitle: "العوازل والترميم الإنشائي", icon: "Home", title: "القرميد", desc: "تركيب القرميد للأسقف بمختلف الأنواع والألوان بإتقان وضمان طويل المدى.", order: 17 },
+  { id: "s18", categoryId: "construction", categoryTitle: "العوازل والترميم الإنشائي", icon: "TreePine", title: "تجديد الحدائق", desc: "تصميم وتجديد الحدائق والمساحات الخارجية بلمسة طبيعية فاخرة.", order: 18 },
+];
+
+export const INITIAL_PROJECTS = PORTFOLIO.map(p => ({
+  ...p,
+  gallery: Array.isArray(p.gallery) && p.gallery.length > 0 ? p.gallery : (p.image ? [`${p.image}?g=1`, `${p.image}?g=2`, `${p.image}?g=3`] : [])
+}));
+
+export const INITIAL_TESTIMONIALS = TESTIMONIALS.map((t, idx) => ({
+  id: `t_${idx + 1}`,
+  name: t.name,
+  role: t.role,
+  quote: t.quote,
+  order: idx + 1,
+}));
+
+export const INITIAL_MEDIA = [
+  { id: "m1", filename: "adan_decor_logo.png", data_url: BRAND.logo, size: 45000, uploaded_at: new Date().toISOString() },
+  { id: "m2", filename: "hero_interior.jpg", data_url: HERO_IMAGE, size: 180000, uploaded_at: new Date().toISOString() },
+  { id: "m3", filename: "about_interior.jpg", data_url: ABOUT_IMAGE, size: 120000, uploaded_at: new Date().toISOString() },
+  { id: "m4", filename: "interior_card_bg.jpg", data_url: interiorCardBg, size: 150000, uploaded_at: new Date().toISOString() },
+  { id: "m5", filename: "aluminum_card_bg.jpg", data_url: aluminumCardBg, size: 160000, uploaded_at: new Date().toISOString() },
+  { id: "m6", filename: "carpentry_card_bg.jpg", data_url: carpentryCardBg, size: 140000, uploaded_at: new Date().toISOString() },
+  { id: "m7", filename: "commercial_card_bg.jpg", data_url: commercialCardBg, size: 155000, uploaded_at: new Date().toISOString() },
+  { id: "m8", filename: "insulation_card_bg.jpg", data_url: insulationCardBg, size: 165000, uploaded_at: new Date().toISOString() },
+];
+
+export const INITIAL_USERS = [
+  { id: "u_admin_1", name: "المسؤول الرئيسي (Super Admin)", email: "admin@adandecor.com", role: "admin", created_at: new Date().toISOString() },
+];
+
+export const INITIAL_BRAND = {
+  nameAr: BRAND.nameAr || "عدن للديكور",
+  nameEn: BRAND.name || "Adan Decor",
+  tagline: BRAND.tagline || "عدن للديكور — حلول متكاملة في التصميم الداخلي والتنفيذ، نحول الأفكار إلى مساحات عصرية تجمع بين الجودة، الدقة، وجمال التفاصيل.",
+  logo: BRAND.logo,
+  whatsapp: BRAND.whatsapp || "+967771258215",
+  whatsappLink: BRAND.whatsappLink || "https://wa.me/967771258215",
+  phone: "+967771258215",
+  phone2: "",
+  email: "",
+  instagram: BRAND.instagram || "https://www.instagram.com/adendecor/",
+  youtube: BRAND.youtube || "https://www.youtube.com/@Aden_decor",
+  facebook: "",
+  snapchat: "",
+  tiktok: BRAND.tiktok || "https://www.tiktok.com/@yemen_decor_771258215",
+  maps: BRAND.maps || "https://maps.app.goo.gl/6EwDsAe3HLmS1FNh7",
+  location: BRAND.location || "عدن — اليمن",
+  address: "عدن، خور مكسر، الشارع العام - اليمن",
+  hours: BRAND.hoursAr || "مفتوح 24 ساعة",
+  seoTitle: "عدن للديكور | تصميم داخلي فاخر وتنفيذ ديكورات في عدن واليمن",
+  seoDescription: "مؤسسة عدن للديكور رائدة في تقديم حلول التصميم الداخلي الفاخر، الديكورات المودرن والكلاسيكية، والتشطيبات الراقية في اليمن.",
+  whatsappDefaultMsg: "مرحباً عدن للديكور، أرغب في حجز استشارة تصميم واستفسار عن المشاريع",
+};
+
+export const INITIAL_PAGE_CONFIG = {
+  homePage: {
+    hero: {
+      headlinePart1: "نصمم الفخامة...",
+      headlinePart2: "وننفذها بإتقان.",
+      subtitle: "حلول متكاملة في التصميم الداخلي، التشطيبات، الواجهات، والأعمال المتخصصة، لتحول رؤيتك إلى واقع يجمع بين الجمال والجودة والدقة.",
+      bgImage: "",
+      ctaPrimaryText: "اطلب استشارة مجانية",
+      ctaSecondaryText: "شاهد أعمالنا",
+    },
+    trust: {
+      title: "لماذا عدن للديكور؟",
+      subtitle: "نضع معايير الفخامة والاحترافية في كل مشروع ننفذه.",
+    }
+  },
+  aboutPage: {
+    eyebrow: "من نحن",
+    title: "حلول متكاملة للتصميم والتنفيذ",
+    paragraph1: "في عدن للديكور، نقدم حلولاً متكاملة في التصميم الداخلي، التشطيبات، وأعمال التنفيذ، مع التزام كامل بأعلى معايير الجودة والدقة في كل مشروع.",
+    paragraph2: "تشمل خدماتنا الديكور الداخلي، أعمال الجبس، تكسيات الجدران، أنظمة الإضاءة الحديثة، أعمال الألومنيوم والواجهات، النجارة المخصصة، المشاريع التجارية والطبية، بالإضافة إلى أنظمة العزل والترميم، لنقدم لعملائنا حلولاً متكاملة تحت سقف واحد.",
+    paragraph3: "نعتمد على فريق متخصص، ومواد عالية الجودة، وتنفيذ احترافي يراعي أدق التفاصيل، لنحول الأفكار إلى مساحات عملية وأنيقة تلبي تطلعات عملائنا وتمنحهم قيمة تدوم.",
+    philosophyTitle: "فلسفتنا في العمل",
+    philosophyText: "نؤمن أن كل مساحة تدير قصتها الخاصة. نعمل بجد لتحويل الفراغات المعمارية إلى تجارب بصرية استثنائية.",
+    mainImage: "",
+  },
+  servicesPage: {
+    title: "خدماتنا الفاخرة",
+    subtitle: "نقدم مجموعة متكاملة من الخدمات التخصصية بمستوى عالٍ من الدقة والإتقان.",
+    sectors: [
+      { id: "interior", title: "الديكور الداخلي والتشطيبات", image: interiorCardBg },
+      { id: "aluminum", title: "أعمال الألمنيوم والواجهات", image: aluminumCardBg },
+      { id: "carpentry", title: "النجارة والديكور الخشبي المخصص", image: carpentryCardBg },
+      { id: "commercial", title: "المشاريع التجارية والطبية", image: commercialCardBg },
+      { id: "construction", title: "العوازل والترميم الإنشائي", image: insulationCardBg },
+    ]
+  },
+  portfolioPage: {
+    title: "معرض الأعمال",
+    subtitle: "استعرض أبرز المشاريع والتحف الفنية التي نفذناها للفلل والمجالس والمشاريع التجارية.",
+  },
+  footer: {
+    copyright: "جميع الحقوق محفوظة © عدن للديكور",
+    aboutText: "مؤسسة متخصصة في الديكور الداخلي والتصميم المعماري الفاخر في عدن واليمن."
+  }
+};
+
+const STORAGE_KEY = "aden_unified_site_data_v4";
+
+const ensureUniqueIds = (items, prefix = "item") => {
+  if (!Array.isArray(items)) return [];
+  const seen = new Set();
+  return items.map((item, idx) => {
+    let id = item?.id;
+    if (id === undefined || id === null || id === "" || seen.has(String(id))) {
+      id = `${prefix}_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`;
+    }
+    seen.add(String(id));
+    return { ...item, id };
+  });
+};
+
+const generateUniqueId = (prefix = "item") => {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+};
+
+const SiteContext = createContext();
+
+export function SiteProvider({ children }) {
+  const [siteData, setSiteData] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        
+        let loadedProjects = parsed.projects?.length ? parsed.projects : INITIAL_PROJECTS;
+        loadedProjects = loadedProjects.map(p => {
+          if (p.title === "ديوان عربي فاخر" || p.id == 2) p.title = "ديوان عربي"; if (p.title === "مجلس" && p.image && (p.image.includes("portfolio_majlis_modern") || p.image.includes("1600607687920"))) {
+             p.image = "https://images.unsplash.com/photo-1618221118493-9c48ea92a955?auto=format&fit=crop&w=1200&q=80";
+             if (p.coverImage) p.coverImage = p.image;
+             if (Array.isArray(p.gallery)) {
+               p.gallery = p.gallery.map(g => (g.includes("portfolio_majlis_modern") || g.includes("1600607687920")) ? p.image : g);
+             }
+          }
+          if ((p.title === "مقر شركة إقليمية" || p.title === "مكتب شركة" || p.title === "مكتب شركات")) {
+             p.title = "مكتب شركة";
+             p.categoryLabel = "مكاتب";
+          }
+          return {
+            ...p,
+            gallery: p.gallery !== undefined ? p.gallery : (p.image ? [`${p.image}?g=1`, `${p.image}?g=2`, `${p.image}?g=3`] : [])
+          };
+        });
+
+        return {
+          services: ensureUniqueIds(parsed.services?.length ? parsed.services : INITIAL_SERVICES, "s"),
+          projects: ensureUniqueIds(loadedProjects, "p"),
+          testimonials: ensureUniqueIds(parsed.testimonials?.length ? parsed.testimonials : INITIAL_TESTIMONIALS, "t"),
+          media: ensureUniqueIds(parsed.media?.length ? parsed.media : INITIAL_MEDIA, "m"),
+          users: ensureUniqueIds(INITIAL_USERS, "u"), // Only primary super admin
+          assetMap: parsed.assetMap || {},
+          brand: (() => {
+            const b = { ...INITIAL_BRAND, ...parsed.brand, email: parsed.brand?.email || "", facebook: parsed.brand?.facebook || "", snapchat: parsed.brand?.snapchat || "", phone2: parsed.brand?.phone2 || "" };
+            if (!b.tagline || b.tagline === "نحوّل المساحات إلى تحف فنية") {
+              b.tagline = INITIAL_BRAND.tagline;
+            }
+            return b;
+          })(),
+          pageConfig: {
+            ...INITIAL_PAGE_CONFIG,
+            ...parsed.pageConfig,
+            homePage: { ...INITIAL_PAGE_CONFIG.homePage, ...parsed.pageConfig?.homePage },
+            aboutPage: { ...INITIAL_PAGE_CONFIG.aboutPage, ...parsed.pageConfig?.aboutPage },
+            servicesPage: { ...INITIAL_PAGE_CONFIG.servicesPage, ...parsed.pageConfig?.servicesPage },
+            portfolioPage: { ...INITIAL_PAGE_CONFIG.portfolioPage, ...parsed.pageConfig?.portfolioPage },
+            footer: { ...INITIAL_PAGE_CONFIG.footer, ...parsed.pageConfig?.footer },
+          },
+        };
+      } catch (e) {
+        console.error("Failed to parse site storage", e);
+      }
+    }
+    return {
+      services: ensureUniqueIds(INITIAL_SERVICES, "s"),
+      projects: ensureUniqueIds(INITIAL_PROJECTS, "p"),
+      testimonials: ensureUniqueIds(INITIAL_TESTIMONIALS, "t"),
+      media: ensureUniqueIds(INITIAL_MEDIA, "m"),
+      users: ensureUniqueIds(INITIAL_USERS, "u"),
+      brand: INITIAL_BRAND,
+      pageConfig: INITIAL_PAGE_CONFIG,
+    };
+  });
+
+  const [syncStatus, setSyncStatus] = useState("synced"); // 'synced' | 'saving'
+  const [lastSyncedAt, setLastSyncedAt] = useState(() => new Date().toLocaleTimeString("ar-YE", { hour: "2-digit", minute: "2-digit" }));
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const isFirstMount = useRef(true);
+
+  // Helper to fetch server data and update state
+  const fetchServerData = async () => {
+    try {
+      const res = await fetch("/api/site-data");
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.services && Array.isArray(data.services)) {
+          setSiteData((prev) => {
+            if (true) { // Always update on fetch
+              let serverProjects = data.projects || [];
+              serverProjects = serverProjects.map(p => {
+                if (p.title === "ديوان عربي فاخر" || p.id == 2) p.title = "ديوان عربي"; if (p.title === "مجلس" && p.image && (p.image.includes("portfolio_majlis_modern") || p.image.includes("1600607687920"))) {
+                   p.image = "https://images.unsplash.com/photo-1618221118493-9c48ea92a955?auto=format&fit=crop&w=1200&q=80";
+                   if (p.coverImage) p.coverImage = p.image;
+                   if (Array.isArray(p.gallery)) {
+                     p.gallery = p.gallery.map(g => (g.includes("portfolio_majlis_modern") || g.includes("1600607687920")) ? p.image : g);
+                   }
+                }
+                if ((p.title === "مقر شركة إقليمية" || p.title === "مكتب شركة" || p.title === "مكتب شركات")) {
+             p.title = "مكتب شركة";
+             p.categoryLabel = "مكاتب";
+          }
+          return {
+                  ...p,
+                  gallery: p.gallery !== undefined ? p.gallery : (p.image ? [`${p.image}?g=1`, `${p.image}?g=2`, `${p.image}?g=3`] : [])
+                };
+              });
+
+              const updated = {
+                ...data,
+                services: ensureUniqueIds(data.services, "s"),
+                projects: ensureUniqueIds(serverProjects, "p"),
+                testimonials: ensureUniqueIds(data.testimonials, "t"),
+                media: ensureUniqueIds(data.media, "m"),
+                users: INITIAL_USERS,
+                assetMap: data.assetMap || {},
+                brand: { ...INITIAL_BRAND, ...data.brand },
+                pageConfig: {
+                  ...INITIAL_PAGE_CONFIG,
+                  ...data.pageConfig,
+                  homePage: { ...INITIAL_PAGE_CONFIG.homePage, ...data.pageConfig?.homePage },
+                  aboutPage: { ...INITIAL_PAGE_CONFIG.aboutPage, ...data.pageConfig?.aboutPage },
+                  servicesPage: { ...INITIAL_PAGE_CONFIG.servicesPage, ...data.pageConfig?.servicesPage },
+                  portfolioPage: { ...INITIAL_PAGE_CONFIG.portfolioPage, ...data.pageConfig?.portfolioPage },
+                  footer: { ...INITIAL_PAGE_CONFIG.footer, ...data.pageConfig?.footer },
+                }
+              };
+                            // Inject preloads for critical images
+              if (typeof document !== "undefined") {
+                const criticalImages = [
+                  updated.brand?.logo,
+                  updated.pageConfig?.homePage?.hero?.backgroundImage
+                ].filter(Boolean);
+                
+                if (updated.projects && updated.projects.length > 0) {
+                   // Preload first 2-3 portfolio images as well
+                   const firstProjects = updated.projects.filter(p => p.featured).slice(0, 3);
+                   firstProjects.forEach(p => {
+                     if (p.image) criticalImages.push(p.image);
+                   });
+                }
+                
+                criticalImages.forEach(src => {
+                  if (!document.querySelector(`link[href="${src}"]`)) {
+                    const link = document.createElement("link");
+                    link.rel = "preload";
+                    link.as = "image";
+                    link.href = src;
+                    document.head.appendChild(link);
+                  }
+                });
+              }
+
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+              return updated;
+            }
+            return prev;
+          });
+        }
+      }
+    } catch (err) {
+      // Ignore network errors on polling
+    }
+  };
+
+  // Initial fetch from server + periodic live poll across all devices & instant storage event
+  useEffect(() => {
+    fetchServerData().finally(() => setIsInitialLoading(false));
+    const interval = setInterval(fetchServerData, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Save to server API & localStorage whenever siteData changes
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    setSyncStatus("saving");
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(siteData));
+    } catch (e) {
+      console.error("Storage error:", e);
+    }
+
+    // Sync to Server Endpoint
+    fetch("/api/site-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(siteData),
+    }).catch((err) => console.warn("Server sync error:", err));
+
+    const timer = setTimeout(() => {
+      setSyncStatus("synced");
+      setLastSyncedAt(new Date().toLocaleTimeString("ar-YE", { hour: "2-digit", minute: "2-digit" }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [siteData]);
+
+  // Backup System: Export JSON
+  const exportAllData = () => {
+    const dataToExport = {
+      ...siteData,
+      exportMeta: {
+        exportedAt: new Date().toISOString(),
+        version: "3.0",
+        appName: "Aden Decor Admin Panel",
+      },
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
+    const downloadAnchor = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `aden_decor_backup_${dateStr}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  // Backup System: Import JSON
+  const importAllData = (importedData) => {
+    if (!importedData || typeof importedData !== "object") {
+      throw new Error("ملف البيانات غير صالح");
+    }
+
+    const merged = {
+      services: Array.isArray(importedData.services) ? importedData.services : INITIAL_SERVICES,
+      projects: Array.isArray(importedData.projects) ? importedData.projects : INITIAL_PROJECTS,
+      testimonials: Array.isArray(importedData.testimonials) ? importedData.testimonials : INITIAL_TESTIMONIALS,
+      media: Array.isArray(importedData.media) ? importedData.media : INITIAL_MEDIA,
+      users: Array.isArray(importedData.users) ? importedData.users : INITIAL_USERS,
+      brand: { ...INITIAL_BRAND, ...(importedData.brand || {}) },
+      assetMap: importedData.assetMap || {},
+      pageConfig: {
+        ...INITIAL_PAGE_CONFIG,
+        ...(importedData.pageConfig || {}),
+        homePage: { ...INITIAL_PAGE_CONFIG.homePage, ...(importedData.pageConfig?.homePage || {}) },
+        aboutPage: { ...INITIAL_PAGE_CONFIG.aboutPage, ...(importedData.pageConfig?.aboutPage || {}) },
+        servicesPage: { ...INITIAL_PAGE_CONFIG.servicesPage, ...(importedData.pageConfig?.servicesPage || {}) },
+        portfolioPage: { ...INITIAL_PAGE_CONFIG.portfolioPage, ...(importedData.pageConfig?.portfolioPage || {}) },
+        footer: { ...INITIAL_PAGE_CONFIG.footer, ...(importedData.pageConfig?.footer || {}) },
+      },
+    };
+
+    setSiteData(merged);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  };
+
+  // Actions
+  const updateServices = (services) => {
+    setSiteData((prev) => ({ ...prev, services }));
+  };
+
+  const addService = (service) => {
+    const newService = {
+      ...service,
+      id: service.id || generateUniqueId("s"),
+      order: service.order || siteData.services.length + 1,
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      services: [...prev.services, newService],
+    }));
+  };
+
+  const updateService = (id, updatedFields) => {
+    setSiteData((prev) => ({
+      ...prev,
+      services: prev.services.map((s) => (s.id === id ? { ...s, ...updatedFields } : s)),
+    }));
+  };
+
+  const deleteService = (id) => {
+    setSiteData((prev) => ({
+      ...prev,
+      services: prev.services.filter((s) => s.id !== id),
+    }));
+  };
+
+  const updateProjects = (projects) => {
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      projects,
+    }));
+  };
+
+  const addProject = (project) => {
+    const newProject = {
+      ...project,
+      id: project.id || generateUniqueId("p"),
+      order: project.order || siteData.projects.length + 1,
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      projects: [...prev.projects, newProject],
+    }));
+  };
+
+  const updateProject = (id, updatedFields) => {
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      projects: prev.projects.map((p) => (p.id === id ? { ...p, ...updatedFields } : p)),
+    }));
+  };
+
+  const deleteProject = (id) => {
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      projects: prev.projects.filter((p) => p.id !== id),
+    }));
+  };
+
+  const updateTestimonials = (testimonials) => {
+    setSiteData((prev) => ({ ...prev, testimonials }));
+  };
+
+  const addTestimonial = (testimonial) => {
+    const newTestimonial = {
+      ...testimonial,
+      id: testimonial.id || generateUniqueId("t"),
+      order: testimonial.order || siteData.testimonials.length + 1,
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      testimonials: [...prev.testimonials, newTestimonial],
+    }));
+  };
+
+  const updateTestimonial = (id, updatedFields) => {
+    setSiteData((prev) => ({
+      ...prev,
+      testimonials: prev.testimonials.map((t) => (t.id === id ? { ...t, ...updatedFields } : t)),
+    }));
+  };
+
+  const deleteTestimonial = (id) => {
+    setSiteData((prev) => ({
+      ...prev,
+      testimonials: prev.testimonials.filter((t) => t.id !== id),
+    }));
+  };
+
+  const addMedia = (mediaItem) => {
+    const newMedia = {
+      ...mediaItem,
+      id: mediaItem.id || generateUniqueId("m"),
+      uploaded_at: mediaItem.uploaded_at || new Date().toISOString(),
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      media: [newMedia, ...prev.media],
+    }));
+    return newMedia;
+  };
+
+  const deleteMedia = (id) => {
+    setSiteData((prev) => ({
+      ...prev,
+      media: prev.media.filter((m) => m.id !== id),
+    }));
+  };
+
+  const addUser = (user) => {
+    const newUser = {
+      ...user,
+      id: user.id || generateUniqueId("u"),
+      created_at: user.created_at || new Date().toISOString(),
+    };
+    setSiteData((prev) => ({
+      ...prev,
+      users: [...(prev.users || []), newUser],
+    }));
+    return newUser;
+  };
+
+  const updateUserInContext = (id, fields) => {
+    setSiteData((prev) => ({
+      ...prev,
+      users: (prev.users || []).map((u) => (u.id === id ? { ...u, ...fields } : u)),
+    }));
+  };
+
+  const deleteUserInContext = (id) => {
+    setSiteData((prev) => ({
+      ...prev,
+      users: (prev.users || []).filter((u) => u.id !== id),
+    }));
+  };
+
+  const updateBrand = (newBrand) => {
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      brand: { ...prev.brand, ...newBrand },
+    }));
+  };
+
+  const updatePageConfig = (pageKey, sectionKey, fields) => {
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      pageConfig: {
+        ...prev.pageConfig,
+        [pageKey]: {
+          ...prev.pageConfig[pageKey],
+          [sectionKey]: {
+            ...(prev.pageConfig[pageKey]?.[sectionKey] || {}),
+            ...fields,
+          },
+        },
+      },
+    }));
+  };
+
+  const setEntirePageConfig = (newConfig) => {
+    setSiteData((prev) => ({
+      ...prev,
+      last_updated: new Date().toISOString(),
+      pageConfig: {
+        ...prev.pageConfig,
+        ...newConfig,
+      },
+    }));
+  };
+
+  const resetDefaults = () => {
+    setSiteData({
+      services: INITIAL_SERVICES,
+      projects: INITIAL_PROJECTS,
+      testimonials: INITIAL_TESTIMONIALS,
+      media: INITIAL_MEDIA,
+      brand: INITIAL_BRAND,
+      pageConfig: INITIAL_PAGE_CONFIG,
+    });
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  if (isInitialLoading) {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a0a] flex items-center justify-center z-[9999]">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-[#D4AF37] font-body text-lg">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SiteContext.Provider
+      value={{
+        siteData,
+        services: siteData.services,
+        projects: siteData.projects,
+        testimonials: siteData.testimonials,
+        media: siteData.media,
+        users: siteData.users || [],
+        brand: siteData.brand,
+        pageConfig: siteData.pageConfig,
+        syncStatus,
+        lastSyncedAt,
+        exportAllData,
+        importAllData,
+        updateServices,
+        addService,
+        updateService,
+        deleteService,
+        updateProjects,
+        addProject,
+        updateProject,
+        deleteProject,
+        updateTestimonials,
+        addTestimonial,
+        updateTestimonial,
+        deleteTestimonial,
+        addMedia,
+        deleteMedia,
+        addUser,
+        updateUserInContext,
+        deleteUserInContext,
+        updateBrand,
+        updatePageConfig,
+        setEntirePageConfig,
+        resetDefaults,
+      }}
+    >
+      {children}
+    </SiteContext.Provider>
+  );
+}
+
+export function useSiteData() {
+  const ctx = useContext(SiteContext);
+  if (!ctx) {
+    throw new Error("useSiteData must be used within a SiteProvider");
+  }
+  return ctx;
+}

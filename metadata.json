@@ -1,0 +1,8 @@
+{
+  "name": "عدن للديكور",
+  "description": "مساحة عمل مخصصة لبناء وتطوير المشروع بناءً على تعليماتك.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
