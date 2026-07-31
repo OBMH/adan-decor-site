@@ -274,7 +274,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   });
 
   // ── File Upload endpoint (Supabase Cloud Storage) ──
-  app.post("/api/upload", upload.single('file'), async (req, res) => {
+  app.post("/api/upload", upload.single('file'), async (req: any, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     try {
       const ext = path.extname(req.file.originalname) || '.jpg';
@@ -309,8 +309,8 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   });
 
   // ── Multi-file upload (Supabase Cloud Storage) ──
-  app.post("/api/upload/multiple", upload.array('files', 20), async (req, res) => {
-    const files = req.files as Express.Multer.File[];
+  app.post("/api/upload/multiple", upload.array('files', 20), async (req: any, res) => {
+    const files = req.files as any[];
     if (!files || files.length === 0) return res.status(400).json({ error: "No files uploaded" });
     try {
       const results = [];
