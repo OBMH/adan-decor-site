@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { createServer as createViteServer } from 'vite';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,9 +16,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 const DATA_FILE_PATH = path.join(process.cwd(), 'site_data.json');
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
-// Ensure uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+// Ensure uploads directory exists if not running in read-only serverless
+if (!process.env.VERCEL) {
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+  } catch (e) {}
 }
 
 // ── Multer config for cloud uploads (memory storage) ──
@@ -551,11 +554,13 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
 
   // ── Vite middleware for development ──
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-    createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    }).then(vite => {
-      app.use(vite.middlewares);
+    import("vite").then(({ createServer: createViteServer }) => {
+      createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      }).then(vite => {
+        app.use(vite.middlewares);
+      });
     }).catch(err => console.error("Vite init error:", err));
   } else if (!process.env.VERCEL) {
     const distPath = path.join(process.cwd(), 'dist');
